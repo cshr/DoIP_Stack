@@ -1947,10 +1947,13 @@ void ne_doip_pack_diagnostic_from_internal_equip(ne_doip_link_data_t *link_data,
             }
             else {
                 // Physical diagnosis
-                ne_doip_routing_table_t *routing_node = ne_doip_routing_list_find_by_logic_address(logical_target_address);
-                if (routing_node == NULL) {
+                uint8_t res = ne_doip_is_functianal_address(global_server_manager->server->config, logical_target_address);
+                if (res == NE_DOIP_TRUE) {
                     ne_doip_sync_end(global_server_manager->equip_ipc_list_sync);
-                    return;
+                    ne_doip_pack_diagnostic_negative_ack(link_data, logical_target_address,
+                                                         logical_source_address,
+                                                         NE_DOIP_DIAGNOSTIC_NACK_UNKNOWN_TA);
+                 return;
                 }
 
                 ne_doip_sync_start(global_server_manager->node_ipc_list_sync);
