@@ -363,7 +363,7 @@ uint32_t ne_doip_equip_unpack_exec(ne_doip_test_equip_t* test_equip, uint32_t po
         pos += NE_DOIP_NCTS_LENGTH;
         memcpy(&info->MDS, buffer + pos, NE_DOIP_MDS_LENGTH);
         info->MDS = ne_doip_bswap_32(info->MDS);
-
+        
         test_equip->entity_status_callback(info);
         free(info);
         break;
