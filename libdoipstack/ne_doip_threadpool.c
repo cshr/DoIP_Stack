@@ -265,7 +265,7 @@ ne_doip_threadpool_new(ne_doip_func func, void *user_data, int max_threads, int 
     pool_r->waiting = 0;
     pool_r->load_balance = balance;
     pool_r->idle_time = time;
-    memset(pool_r->queue->idlistrun, 0, NE_DOIP_IDLIST_SIZE);
+    memset(pool_r->queue->idlistrun, 0, NE_DOIP_IDLIST_SIZE * sizeof(int));
     pthread_cond_init(&pool_r->cond, NULL);
 
     if (pool_r->idle_time < 0) {

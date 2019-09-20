@@ -117,7 +117,7 @@ ne_doip_connect_to_socket(const char *name)
 
     size = offsetof (struct sockaddr_un, sun_path) + name_size;
     if (ne_doip_os_connect(fd, (struct sockaddr *) &addr, size) < 0) {
-        NE_DOIP_PRINT("test_tcp_create connect error code:%d, message:%s\n", errno, strerror(errno));
+        NE_DOIP_PRINT("ne_doip_connect_to_socket error code:%d, message:%s\n", errno, strerror(errno));
         close(fd);
         fd = -1;
         return fd;
