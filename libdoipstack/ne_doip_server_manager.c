@@ -1953,7 +1953,7 @@ void ne_doip_pack_diagnostic_from_internal_equip(ne_doip_link_data_t *link_data,
                     ne_doip_pack_diagnostic_negative_ack(link_data, logical_target_address,
                                                          logical_source_address,
                                                          NE_DOIP_DIAGNOSTIC_NACK_UNKNOWN_TA);
-                   return;
+                 return;
                 }
 
                 ne_doip_sync_start(global_server_manager->node_ipc_list_sync);
