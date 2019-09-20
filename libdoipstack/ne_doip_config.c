@@ -160,6 +160,7 @@ ne_doip_check_xml_valid(const char *path)
         NE_DOIP_PRINT("open config file is failed![%d] [%s]\n", errno, strerror(errno));
         return -1;
     }
+
     struct stat st;
     stat(path, &st);
     char xmlstr[st.st_size]; // xml string

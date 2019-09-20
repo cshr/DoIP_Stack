@@ -536,6 +536,11 @@ void ne_doip_remove_connection_table(int fd, uint8_t socket_type)
         if (node_ipc_table != NULL) {
             ne_doip_list_remove((ne_doip_list_t *) node_ipc_table);
             free(node_ipc_table);
+            ne_doip_net_source_t* net_source = ne_doip_net_source_list_find_by_ifname(global_server_manager->server->config,
+                                                 global_server_manager->server->config->ifname);
+            if (net_source != NULL) {
+                net_source->announce_state = NE_DOIP_IP_CONFIGURED_NOT_ANNOUNCED;
+            }
             ne_doip_server_disconnect(global_server_manager->server, NE_DOIP_SOCKET_TYPE_TCP, node_ipc_table->tcp_fd);
         }
         ne_doip_sync_end(global_server_manager->node_ipc_list_sync);
@@ -1689,7 +1694,7 @@ void ne_doip_sub_diagnostic_to_other(ne_doip_link_data_t *link_data, uint8_t pos
                                                      logical_target_address,
                                                      NE_DOIP_DIAGNOSTIC_NACK_TARGET_UNREACHABLE);
             }
-            if (NE_DOIP_SOCKET_TYPE_TCP == link_data->comm_type) {
+            else if (NE_DOIP_SOCKET_TYPE_TCP == link_data->comm_type) {
                 uint16_t logical_source_address = 0x0000;
                 uint16_t logical_target_address = 0x0000;
                 memcpy(&logical_target_address, link_data->data + pos, NE_DOIP_LOGICAL_ADDRESS_LENGTH);
@@ -1953,7 +1958,7 @@ void ne_doip_pack_diagnostic_from_internal_equip(ne_doip_link_data_t *link_data,
                     ne_doip_pack_diagnostic_negative_ack(link_data, logical_target_address,
                                                          logical_source_address,
                                                          NE_DOIP_DIAGNOSTIC_NACK_UNKNOWN_TA);
-                 return;
+                    return;
                 }
 
                 ne_doip_sync_start(global_server_manager->node_ipc_list_sync);
@@ -2715,24 +2720,40 @@ void ne_doip_unpack_routing_activation_req(ne_doip_link_data_t *link_data, uint8
             ne_doip_node_tcp_table_t *tcp_table_other = ne_doip_node_tcp_list_find_by_logic_address(equip_logical_address);
             if (tcp_table_other != NULL) {
                 ne_doip_sync_end(global_server_manager->node_tcp_list_sync);
-                // NE_DOIP_PRINT("sa is already assigned to another tcp socket.. \n");
-                // alive check（single SA）
-                node_tcp_table->connection_state = NE_DOIP_CONNECT_STATE_REGISTERED_ROUTING_ACTIVE;
-                node_tcp_table->fd_regist_flag = NE_DOIP_TRUE;
-                node_tcp_table->equip_logical_address = equip_logical_address;
-                ne_doip_link_data_t link_data_t;
-                memset(&link_data_t, 0, sizeof link_data_t);
-                link_data_t.fd = node_tcp_table->fd;
-                link_data_t.comm_type = NE_DOIP_SOCKET_TYPE_TCP;
-                ne_doip_sync_start(global_server_manager->node_ipc_list_sync);
-                ne_doip_node_ipc_table_t* ipc_entity_table = ne_doip_node_ipc_list_find_entity();
-                if (ipc_entity_table != NULL) {
-                    ne_doip_pack_routing_activation_res(&link_data_t, equip_logical_address,
-                                                        ipc_entity_table->entity_logical_address,
-                                                        NE_DOIP_RA_RES_ROUTING_SUCCESSFULLY_ACTIVATED,
-                                                        0x00000000);
+                NE_DOIP_PRINT("sa is already assigned to another tcp socket.. \n");
+
+                if (NE_DOIP_ENTITY_TYPE_EDGE_GATEWAY == global_server_manager->server->config->entity_type
+                    || NE_DOIP_FALSE == global_server_manager->server->config->egw_control) {
+                    // alive check（single SA）
+                    tcp_table_other->routing_fd = link_data->fd; // record current tcp socket
+                    tcp_table_other->single_alive_check_flag = NE_DOIP_TRUE;
+                    ne_doip_link_data_t link_data_t;
+                    memset(&link_data_t, 0, sizeof link_data_t);
+                    link_data_t.fd = tcp_table_other->fd;
+                    link_data_t.comm_type = NE_DOIP_SOCKET_TYPE_TCP;
+                    ne_doip_pack_alive_check_req(&link_data_t);
+                    tcp_table_other->tcp_alive_check_timeid = ne_doip_timer_start(global_server_manager->timer_manager,
+                                                                -1, global_server_manager->server->config->alive_check_time,
+                                                                ne_doip_alive_check_timer_callback);
                 }
-                ne_doip_sync_end(global_server_manager->node_ipc_list_sync);
+                else {
+                    node_tcp_table->connection_state = NE_DOIP_CONNECT_STATE_REGISTERED_ROUTING_ACTIVE;
+                    node_tcp_table->fd_regist_flag = NE_DOIP_TRUE;
+                    node_tcp_table->equip_logical_address = equip_logical_address;
+                    ne_doip_link_data_t link_data_t;
+                    memset(&link_data_t, 0, sizeof link_data_t);
+                    link_data_t.fd = node_tcp_table->fd;
+                    link_data_t.comm_type = NE_DOIP_SOCKET_TYPE_TCP;
+                    ne_doip_sync_start(global_server_manager->node_ipc_list_sync);
+                    ne_doip_node_ipc_table_t* ipc_entity_table = ne_doip_node_ipc_list_find_entity();
+                    if (ipc_entity_table != NULL) {
+                        ne_doip_pack_routing_activation_res(&link_data_t, equip_logical_address,
+                                                            ipc_entity_table->entity_logical_address,
+                                                            NE_DOIP_RA_RES_ROUTING_SUCCESSFULLY_ACTIVATED,
+                                                            0x00000000);
+                    }
+                    ne_doip_sync_end(global_server_manager->node_ipc_list_sync);
+                }
             }
             else {
                 uint8_t regist_fd_count = ne_doip_node_tcp_list_regist_fd_count();
@@ -4333,8 +4354,9 @@ uint32_t ne_doip_ipc_unpack_execute(ne_doip_link_data_t *link_data, uint32_t pos
         ne_doip_sync_end(global_server_manager->equip_ipc_list_sync);
 
         if (payload_data_length > link_data->data_size - pos - NE_DOIP_BLANK_2_LENGTH - NE_DOIP_TA_TYPE_LENGTH) {
-            // Big data
-            ++g_task_id;
+            if (++g_task_id > 255) {
+                g_task_id = 0;
+            }
             ne_doip_pack_diagnostic_from_internal_equip(link_data, pos + NE_DOIP_BLANK_2_LENGTH,
                                                         link_data->data_size - pos - NE_DOIP_BLANK_2_LENGTH - NE_DOIP_TA_TYPE_LENGTH);
         }
