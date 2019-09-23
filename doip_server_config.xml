@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<DoIP_Stack>
+    <stack_version>1.0</stack_version>
+    <net>
+        <!-- Supported network environment IPv4 or IPv6 -->
+        <net_type>IPv4</net_type>
+        <!-- Source of diagnostic request, from different IF. The following configuration order indicates the priority, which above indicates that the higher the priority -->
+        <net_source>
+            <source_type>OBD</source_type>
+            <ifname>eth0</ifname>
+        </net_source>
+        <net_source>
+            <source_type>OTA</source_type>
+            <ifname>ppp0</ifname>
+        </net_source>
+        <net_source>
+            <source_type>wifi</source_type>
+            <ifname>wlan0</ifname>
+        </net_source>
+    </net>
+    <entity>
+        <!-- 1.edge_gateway 2.gateway 3.node -->
+        <entity_type>node</entity_type>
+        <MCTS>255</MCTS>
+        <MDS>209715200</MDS>
+    </entity>
+    <config>
+        <protocol_version>02</protocol_version>
+        <!-- TRUE:Indicates that the nodes in the domain are not visible and are routed by the edge gateway. -->
+        <egw_control>TRUE</egw_control>
+        <need_vin_gid_sync>FALSE</need_vin_gid_sync>
+        <tester_sa>0F11</tester_sa>
+        <timer>
+            <A_DoIP_Announce_Interval>500</A_DoIP_Announce_Interval>
+            <T_TCP_General_Inactivity>300000</T_TCP_General_Inactivity>
+            <T_TCP_Initial_Inactivity>2000</T_TCP_Initial_Inactivity>
+            <T_TCP_Alive_Check>500</T_TCP_Alive_Check>
+        </timer>
+    </config>
+    <routing>
+        <entity ID="0">
+            <!-- self -->
+            <entity_type>edge_gateway</entity_type>
+            <!-- sample: CAN nodes -->
+            <logical_address>0201</logical_address>
+            <logical_address>0202</logical_address>
+            <logical_address>0203</logical_address>
+            <ip>192.168.29.33</ip>
+        </entity>
+        <entity ID="1">
+            <!-- sample: Domain Controller -->
+            <entity_type>gateway</entity_type>
+            <!-- sample: CAN nodes -->
+            <logical_address>0301</logical_address>
+            <logical_address>0302</logical_address>
+            <logical_address>0303</logical_address>
+            <ip>192.168.29.70</ip>
+        </entity>
+        <entity ID="2">
+            <entity_type>node</entity_type>
+            <logical_address>0130</logical_address>
+            <ip>127.0.0.1</ip>
+        </entity>
+    </routing>
+    <!-- The following shows the functionally addressed grouping.“0E00” represents functional addressing of all ECUs -->
+    <func_group ID="0200">
+        <logical_address>0201</logical_address>
+        <logical_address>0202</logical_address>
+        <logical_address>0203</logical_address>
+    </func_group>
+    <func_group ID="0300">
+        <logical_address>0301</logical_address>
+        <logical_address>0302</logical_address>
+        <logical_address>0303</logical_address>
+    </func_group>
+    <func_group ID="E000">
+        <logical_address>0130</logical_address>
+        <logical_address>0301</logical_address>
+        <logical_address>0302</logical_address>
+        <logical_address>0303</logical_address>
+        <logical_address>0201</logical_address>
+        <logical_address>0202</logical_address>
+        <logical_address>0203</logical_address>
+    </func_group>
+</DoIP_Stack>
