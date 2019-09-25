@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <netinet/in.h>
 
 #include "ne_doip_server_manager.h"
 #include "ne_doip_os.h"
@@ -3890,8 +3891,12 @@ uint32_t ne_doip_net_unpack_exec(ne_doip_link_data_t *link_data, uint32_t pos)
         if (NE_DOIP_ENTITY_TYPE_EDGE_GATEWAY == global_server_manager->server->config->entity_type
             || NE_DOIP_FALSE == global_server_manager->server->config->egw_control) {
             NE_DOIP_PRINT("[%s] payload_type is [Vehicle Identification request message] \n", __FUNCTION__);
-            uint8_t num = ne_doip_list_length(global_server_manager->equip_ipc_list);
-            if (0 == num) {
+
+            // uint8_t num = ne_doip_list_length(global_server_manager->equip_ipc_list);
+
+            char ip[INET6_ADDRSTRLEN] = { 0 };
+            ne_doip_os_get_ip(global_server_manager->server->config->ifname, ip, INET6_ADDRSTRLEN);
+            if (0 != strcmp(ip, link_data->ip)) {
                 ne_doip_unpack_vehicle_identification_req(link_data, pos);
             }
             else {
@@ -3911,8 +3916,11 @@ uint32_t ne_doip_net_unpack_exec(ne_doip_link_data_t *link_data, uint32_t pos)
         if (NE_DOIP_ENTITY_TYPE_EDGE_GATEWAY == global_server_manager->server->config->entity_type
             || NE_DOIP_FALSE == global_server_manager->server->config->egw_control) {
             NE_DOIP_PRINT("[%s] payload_type is [Vehicle identification request message with VIN] \n", __FUNCTION__);
-            uint8_t num = ne_doip_list_length(global_server_manager->equip_ipc_list);
-            if (0 == num) {
+
+            // uint8_t num = ne_doip_list_length(global_server_manager->equip_ipc_list);
+            char ip[INET6_ADDRSTRLEN] = { 0 };
+            ne_doip_os_get_ip(global_server_manager->server->config->ifname, ip, INET6_ADDRSTRLEN);
+            if (0 != strcmp(ip, link_data->ip)) {
                 ne_doip_unpack_vehicle_identification_req_vin(link_data, pos, payload_length);
             }
             else {
